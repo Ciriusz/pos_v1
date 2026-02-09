@@ -1,0 +1,78 @@
+create table categories (
+    id uuid primary key default gen_random_uuid(),
+    name text not null
+);
+create table products (
+    id uuid primary key default gen_random_uuid(),
+    code text unique not null,
+    name text not null,
+    price numeric(10,2) not null,
+    stock integer not null,
+    category_id uuid references categories(id),
+    active boolean default true,
+    created_at timestamptz default now()
+);
+create table payment_methods (
+    id uuid primary key default gen_random_uuid(),
+    name text not null
+);
+create table sales (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references auth.users(id),
+    payment_method_id uuid references payment_methods(id),
+    total numeric(10,2) not null,
+    tax numeric(10,2),
+    created_at timestamptz default now()
+);
+create table sale_details (
+    id uuid primary key default gen_random_uuid(),
+    sale_id uuid not null references sales(id) on delete cascade,
+    product_id uuid not null references products(id),
+    quantity integer not null,
+    unit_price numeric(10,2) not null,
+    subtotal numeric(10,2) not null
+);
+insert into categories (name) values
+('Bebidas'),
+('Snacks');
+insert into products (code, name, price, stock, category_id)
+values (
+    'P001',
+    'Coca-Cola 350ml',
+    1500,
+    20,
+    (select id from categories where name = 'Bebidas')
+);
+insert into payment_methods (name) values
+('Efectivo'),
+('Débito'),
+('Crédito');
+create or replace function calculate_tax()
+returns trigger as $$
+begin
+  new.tax := new.total * 0.19;
+  return new;
+end;
+$$ language plpgsql;
+create trigger trg_calculate_tax
+before insert on sales
+for each row
+execute function calculate_tax();
+alter table sales enable row level security;
+
+create policy "User can access own sales"
+on sales
+for all
+using (auth.uid() = user_id);
+ alter table sale_details enable row level security;
+
+create policy "Access details by owner"
+on sale_details
+for all
+using (
+  exists (
+    select 1 from sales
+    where sales.id = sale_details.sale_id
+    and sales.user_id = auth.uid()
+  )
+);
