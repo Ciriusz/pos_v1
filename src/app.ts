@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import productsRouter from './routes/products';
 import salesRouter from './routes/sales';
+import categoriesRouter from './routes/categories';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.use(express.json());
 // Routes
 app.use('/api/products', productsRouter);
 app.use('/api/sales', salesRouter);
+app.use('/api/categories', categoriesRouter);
 
 // Basic health check
 app.get('/', (req, res) => {
