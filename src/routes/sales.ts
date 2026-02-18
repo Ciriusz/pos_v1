@@ -1,9 +1,8 @@
 import { Router } from 'express';
-// Placeholder for sales controller
+import { getDailySales } from '../controllers/sales';
+
 const router = Router();
 
-router.get('/', (req, res) => {
-    res.json({ message: "Sales endpoint not implemented yet" })
-});
+router.get('/daily', getDailySales);
 
 export default router;
